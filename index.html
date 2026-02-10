@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purrdon? - Netflixで英語ディクテーション</title>
+  <meta name="description" content="Netflixの映画やドラマで英語ディクテーション。辞書・単語帳・お気に入りセリフ機能で効率的に英語力アップ！">
+  <link rel="icon" type="image/png" href="icon128.png">
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-dark: #0d0d1a;
+      --bg-card: #141428;
+      --accent: #4ecca3;
+      --accent-dim: rgba(78, 204, 163, 0.15);
+      --accent-glow: rgba(78, 204, 163, 0.3);
+      --gold: #f0c040;
+      --text: #e0e0e0;
+      --text-dim: #888;
+      --netflix-red: #e50914;
+      --radius: 16px;
+      --radius-sm: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ===== Nav ===== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(13, 13, 26, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(78, 204, 163, 0.08);
+    }
+    .nav-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .nav-logo img { width: 28px; height: 28px; }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .nav-links a.btn-chrome,
+    .nav-links a.btn-chrome:hover { color: #000; }
+
+    .btn-chrome {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #000;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 8px 20px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-chrome:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-chrome svg { width: 16px; height: 16px; }
+
+    /* ===== Hero ===== */
+    .hero {
+      padding: 140px 0 60px;
+      text-align: center;
+      position: relative;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, var(--accent-dim) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .hero-icon {
+      width: 88px;
+      height: 88px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 20px var(--accent-glow));
+    }
+
+    .hero h1 {
+      font-size: clamp(30px, 5vw, 46px);
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+    .hero h1 .accent { color: var(--accent); }
+    .hero h1 .netflix { color: var(--netflix-red); }
+
+    .hero-sub {
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 500px;
+      margin: 0 auto 28px;
+    }
+
+    .hero-badges {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .badge-icon { font-size: 13px; }
+
+    /* ================================================================
+       MOCKUP — faithfully reproduces the real Purrdon? extension UI
+       ================================================================ */
+    .mockup-section {
+      padding: 20px 0 80px;
+      text-align: center;
+    }
+    .mockup-wrapper {
+      position: relative;
+      max-width: 860px;
+      margin: 0 auto;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(78, 204, 163, 0.12);
+      box-shadow: 0 8px 60px rgba(0, 0, 0, 0.5), 0 0 40px var(--accent-dim);
+    }
+
+    /* Browser chrome */
+    .m-browser-bar {
+      background: #1e1e30;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .m-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .m-dot.red { background: #ff5f57; }
+    .m-dot.yellow { background: #ffbd2e; }
+    .m-dot.green { background: #28ca41; }
+    .m-url {
+      flex: 1;
+      margin-left: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 5px;
+      padding: 3px 12px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* ---- Extension bar (top of Netflix) ---- */
+    .m-bar {
+      background: rgba(10, 10, 25, 0.95);
+      display: flex;
+      align-items: stretch;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      position: relative;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Left panel */
+    .m-panel-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 6px 8px;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      min-width: 90px;
+      justify-content: center;
+    }
+    .m-btn {
+      background: rgba(22, 33, 62, 0.85);
+      color: #e0e0e0;
+      border: 1px solid rgba(15, 52, 96, 0.7);
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 10px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .m-btn.m-on {
+      background: rgba(78, 204, 163, 0.85);
+      border-color: #4ecca3;
+      color: #1a1a2e;
+      font-weight: 600;
+    }
+    .m-btn-plan {
+      background: rgba(78, 204, 163, 0.1);
+      border: 1px solid rgba(78, 204, 163, 0.25);
+      color: #4ecca3;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 9px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    /* Center — dictation area */
+    .m-center {
+      flex: 1;
+      display: flex;
+      align-items: stretch;
+      min-width: 0;
+    }
+    .m-dictation-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 2px;
+      padding: 10px 12px;
+      height: 80px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 17px;
+      letter-spacing: 2px;
+    }
+    .m-word-slot { display: inline-block; padding: 2px 1px; border-radius: 3px; }
+    .m-char-revealed { color: #4ecca3; font-weight: bold; margin: 0 1px; }
+    .m-char-hidden {
+      display: inline-block;
+      width: 0.6em;
+      border-bottom: 2px solid #888;
+      color: transparent;
+      margin: 0 1px;
+    }
+    .m-word-complete { background: rgba(78, 204, 163, 0.1); }
+    .m-punctuation { color: #e0e0e0; font-family: 'Courier New', Courier, monospace; font-size: 17px; margin: 0 1px; }
+    .m-word-space { display: inline-block; width: 8px; }
+    .m-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 18px;
+      background: #4ecca3;
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+      margin-left: 1px;
+    }
+    @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+    /* Copy column */
+    .m-copy-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      gap: 3px;
+    }
+    .m-icon-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      font-size: 12px;
+      padding: 4px 6px;
+      color: #aaa;
+      line-height: 1;
+    }
+    .m-reveal-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .m-reveal-btn svg { width: 16px; height: 16px; }
+
+    /* Right panel */
+    .m-panel-right {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 6px 8px;
+      border-left: 1px solid rgba(255,255,255,0.1);
+      min-width: 130px;
+      justify-content: center;
+    }
+    .m-right-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .m-nav-group { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+    .m-nav-group .m-btn { min-width: 32px; text-align: center; font-size: 10px; }
+    .m-shortcut-key {
+      font-size: 8px;
+      color: #777;
+      font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 2px;
+      padding: 0 3px;
+      line-height: 12px;
+    }
+    .m-segment-info { color: #888; font-size: 9px; white-space: nowrap; }
+    .m-select {
+      background: rgba(22, 33, 62, 0.85);
+      color: #e0e0e0;
+      border: 1px solid rgba(15, 52, 96, 0.7);
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 9px;
+    }
+    .m-btn-small { font-size: 9px; padding: 2px 5px; }
+
+    /* Minimize button */
+    .m-minimize {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      color: #666;
+      font-size: 10px;
+      background: none;
+      border: none;
+    }
+
+    /* Japanese subtitle row */
+    .m-ja-row {
+      background: rgba(8, 18, 30, 0.92);
+      color: var(--gold);
+      font-size: 13px;
+      text-align: center;
+      padding: 4px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ---- Video area ---- */
+    .m-video {
+      position: relative;
+      min-height: 380px;
+      overflow: hidden;
+    }
+    .m-video-bg {
+      position: absolute;
+      inset: 0;
+      background: url('freepik__netflix__65628.png') center/cover no-repeat;
+    }
+
+    /* Netflix-style progress bar at bottom */
+    .m-progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255,255,255,0.15);
+    }
+    .m-progress-fill {
+      width: 35%;
+      height: 100%;
+      background: var(--netflix-red);
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ===== Features ===== */
+    .features { padding: 80px 0; }
+    .features h2 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 48px;
+    }
+    .features h2 .accent { color: var(--accent); }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(78, 204, 163, 0.08);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .feature-card:hover {
+      border-color: rgba(78, 204, 163, 0.25);
+      transform: translateY(-3px);
+    }
+    .feature-emoji { font-size: 32px; margin-bottom: 12px; display: block; }
+    .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 13px; color: var(--text-dim); line-height: 1.8; }
+
+    /* ===== How ===== */
+    .how { padding: 80px 0; }
+    .how h2 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 48px; }
+    .how h2 .accent { color: var(--accent); }
+
+    .steps { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; }
+    .step { flex: 1; min-width: 200px; max-width: 280px; text-align: center; }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent-dim); border: 2px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 700; color: var(--accent);
+      margin: 0 auto 16px;
+    }
+    .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+
+    /* ===== Note ===== */
+    .note-section { padding: 0 0 40px; }
+    .note-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(240, 192, 64, 0.06);
+      border: 1px solid rgba(240, 192, 64, 0.15);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .note-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .note-box p { font-size: 13px; color: var(--text-dim); line-height: 1.7; }
+    .note-box strong { color: var(--gold); }
+
+    /* ===== Shortcuts ===== */
+    .shortcuts-section { padding: 60px 0 80px; }
+    .shortcuts-section h2 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 40px; }
+    .shortcuts-section h2 .accent { color: var(--accent); }
+
+    .shortcut-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border: 1px solid rgba(78, 204, 163, 0.06);
+      border-radius: var(--radius-sm);
+    }
+    .shortcut-item kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 36px;
+      height: 32px;
+      background: rgba(22, 33, 62, 0.85);
+      border: 1px solid rgba(78, 204, 163, 0.25);
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    .shortcut-item span { font-size: 13px; color: var(--text-dim); }
+
+    /* ===== Plans ===== */
+    .plans { padding: 80px 0; }
+    .plans h2 { text-align: center; font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    .plans h2 .accent { color: var(--accent); }
+    .plans-sub { text-align: center; color: var(--text-dim); font-size: 14px; margin-bottom: 40px; }
+
+    .plan-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      max-width: 840px;
+      margin: 0 auto;
+    }
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(78, 204, 163, 0.08);
+      border-radius: var(--radius);
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .plan-card.plan-pro {
+      border-color: #6bc5f0;
+      position: relative;
+      box-shadow: 0 0 30px rgba(107, 197, 240, 0.15);
+    }
+    .plan-card.plan-pro::before {
+      content: 'おすすめ';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #6bc5f0;
+      color: #0d0d1a;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 12px;
+      border-radius: 999px;
+    }
+    .plan-emoji { font-size: 36px; margin-bottom: 12px; }
+    .plan-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .plan-price { font-size: 28px; font-weight: 800; color: var(--accent); margin: 12px 0; }
+    .plan-price span { font-size: 14px; font-weight: 400; color: var(--text-dim); }
+    .plan-features { list-style: none; text-align: left; margin: 16px 0; }
+    .plan-features li {
+      font-size: 13px; padding: 6px 0;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-dim);
+    }
+    .plan-features li .check { color: var(--accent); font-size: 14px; }
+    .plan-features li .cross { color: #555; font-size: 14px; }
+
+    /* ===== CTA ===== */
+    .cta { padding: 80px 0; text-align: center; }
+    .cta-box {
+      background: linear-gradient(135deg, rgba(78, 204, 163, 0.08), rgba(78, 204, 163, 0.02));
+      border: 1px solid rgba(78, 204, 163, 0.15);
+      border-radius: var(--radius);
+      padding: 48px 32px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .cta-box h2 { font-size: 24px; font-weight: 700; margin-bottom: 12px; }
+    .cta-box p { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; }
+    .cta .btn-chrome { font-size: 16px; padding: 12px 32px; }
+
+    /* ===== Footer ===== */
+    .footer {
+      padding: 32px 0;
+      text-align: center;
+      border-top: 1px solid rgba(78, 204, 163, 0.06);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+    .footer-links a {
+      color: #666;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-sep { color: #333; }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #444;
+    }
+    .footer-inner img { width: 16px; height: 16px; opacity: 0.4; }
+
+    /* ===== Mobile ===== */
+    @media (max-width: 640px) {
+      .nav-links a:not(.btn-chrome) { display: none; }
+      .hero { padding: 120px 0 50px; }
+      .hero-icon { width: 64px; height: 64px; }
+      .hero h1 { font-size: 26px; }
+      .hero-sub { font-size: 14px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .steps { flex-direction: column; align-items: center; }
+      .plan-cards { grid-template-columns: 1fr; max-width: 320px; }
+      .m-video { min-height: 200px; }
+      .m-dictation-area { font-size: 14px; height: 60px; }
+      .m-panel-left, .m-panel-right { display: none; }
+      .m-ja-row { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <img src="icon128.png" alt="Purrdon?">
+      Purrdon?
+    </a>
+    <div class="nav-links">
+      <a href="#features">機能</a>
+      <a href="#how">使い方</a>
+      <a href="#plans">プラン</a>
+      <a href="#" class="btn-chrome" id="install-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        Chromeに追加
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <img src="icon128.png" alt="Purrdon?" class="hero-icon">
+    <h1><span class="netflix">Netflix</span>で<br><span class="accent">英語ディクテーション</span></h1>
+    <p class="hero-sub">ディクテーションこそ最強のリスニング学習法。<br>好きな映画やドラマを見ながら、楽しくリスニング力を鍛えよう。</p>
+    <a href="#" class="btn-chrome" id="hero-install-btn">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      無料でChromeに追加
+    </a>
+    <div class="hero-badges">
+      <span class="badge"><span class="badge-icon">🎧</span> ディクテーション</span>
+      <span class="badge"><span class="badge-icon">📖</span> 辞書 & 単語帳</span>
+      <span class="badge"><span class="badge-icon">⭐</span> お気に入りセリフ</span>
+      <span class="badge"><span class="badge-icon">💾</span> 字幕ダウンロード</span>
+    </div>
+  </div>
+</section>
+
+<!-- Mockup — faithfully reproduces the real Purrdon? extension UI -->
+<section class="mockup-section">
+  <div class="container">
+    <div class="mockup-wrapper">
+      <!-- Browser chrome -->
+      <div class="m-browser-bar">
+        <div class="m-dot red"></div>
+        <div class="m-dot yellow"></div>
+        <div class="m-dot green"></div>
+        <div class="m-url">netflix.com/watch/81234567</div>
+      </div>
+
+      <!-- Extension bar (top of Netflix) -->
+      <div class="m-bar">
+        <!-- Left panel: toggles -->
+        <div class="m-panel-left">
+          <div class="m-btn m-on">ON</div>
+          <div class="m-btn m-on">自動停止: ON</div>
+          <div class="m-btn">英語: OFF</div>
+          <div class="m-btn">日本語: OFF</div>
+          <div class="m-btn">📖 単語帳</div>
+          <div class="m-btn">★ お気に入り</div>
+        </div>
+
+        <!-- Center: dictation area + copy column -->
+        <div class="m-center">
+          <div class="m-dictation-area">
+            <!-- "I can't believe you actually did that." -->
+            <span class="m-word-slot m-word-complete"><span class="m-char-revealed">I</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot m-word-complete"><span class="m-char-revealed">c</span><span class="m-char-revealed">a</span><span class="m-char-revealed">n</span><span class="m-char-revealed">'</span><span class="m-char-revealed">t</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot"><span class="m-char-revealed">b</span><span class="m-char-revealed">e</span><span class="m-char-revealed">l</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot"><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot"><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot"><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span></span>
+            <span class="m-word-space"></span>
+            <span class="m-word-slot"><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span><span class="m-char-hidden">_</span></span>
+            <span class="m-punctuation">.</span>
+            <span class="m-cursor"></span>
+          </div>
+
+          <!-- Copy / Reveal / Fav buttons -->
+          <div class="m-copy-col">
+            <div class="m-reveal-btn" title="全文表示">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                <ellipse cx="12" cy="12" rx="11" ry="7" stroke="#aaa" stroke-width="1.5"/>
+                <ellipse cx="12" cy="12" rx="4" ry="6.5" fill="#f0c040" opacity=".8"/>
+                <ellipse cx="12" cy="12" rx="1.5" ry="6" fill="#1a1a2e"/>
+                <circle cx="10.5" cy="9.5" r="1.2" fill="white" opacity=".6"/>
+              </svg>
+            </div>
+            <div class="m-icon-btn" title="コピー">📋</div>
+            <div class="m-icon-btn" title="お気に入り" style="font-size: 14px;">☆</div>
+            <div class="m-icon-btn" title="AI解説" style="font-size: 12px; color: #6bc5f0;">🤖</div>
+          </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="m-panel-right">
+          <div class="m-right-row">
+            <div class="m-btn m-btn-small">クリア</div>
+            <div class="m-btn m-btn-small">全クリア</div>
+            <span class="m-segment-info">12/48</span>
+          </div>
+          <div class="m-right-row">
+            <div class="m-nav-group">
+              <div class="m-btn">◀ 前</div>
+              <span class="m-shortcut-key">A</span>
+            </div>
+            <div class="m-nav-group">
+              <div class="m-btn">↻ 繰返</div>
+              <span class="m-shortcut-key">S</span>
+            </div>
+            <div class="m-nav-group">
+              <div class="m-btn">次 ▶</div>
+              <span class="m-shortcut-key">D</span>
+            </div>
+          </div>
+          <div class="m-right-row">
+            <div class="m-select">SRT ▾</div>
+            <div class="m-btn m-btn-small">⬇ DL</div>
+          </div>
+          <div class="m-right-row">
+            <div class="m-btn-plan">😺 プラン</div>
+          </div>
+        </div>
+
+        <div class="m-minimize">▼</div>
+      </div>
+
+      <!-- Japanese subtitle row -->
+      <div class="m-ja-row">信じられない、本当にそんなことしたの。</div>
+
+      <!-- Video area -->
+      <div class="m-video">
+        <div class="m-video-bg"></div>
+        <!-- Progress bar -->
+        <div class="m-progress"><div class="m-progress-fill"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="container">
+    <h2>主な<span class="accent">機能</span></h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-emoji">🎧</span>
+        <h3>ディクテーション</h3>
+        <p>Netflixの英語字幕が隠され、クリックで一文字ずつ表示。聞き取りと答え合わせを繰り返してリスニング力が鍛えられます。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">⏸️</span>
+        <h3>自動一時停止</h3>
+        <p>セリフが切り替わると自動でポーズ。焦らず自分のペースでディクテーションに集中できます。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">⌨️</span>
+        <h3>キーボードショートカット</h3>
+        <p>A・S・Dキーだけで前のセリフ・リピート・次のセリフに移動。マウスを使わずにサクサクとリピート練習ができます。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">📖</span>
+        <h3>辞書 & 単語帳</h3>
+        <p>分からない単語をクリックすると英英辞書がポップアップ。そのまま単語帳に登録して、自分だけの単語リストを作れます。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">⭐</span>
+        <h3>お気に入りセリフ</h3>
+        <p>印象に残ったセリフを保存。再生ボタンでそのシーンに即ジャンプ。名セリフコレクションを作ろう。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">🇯🇵</span>
+        <h3>日本語字幕サポート</h3>
+        <p>英語字幕の下に日本語訳を同時表示。分からないフレーズも安心。ON/OFFはワンクリックで切替。</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-emoji">💾</span>
+        <h3>字幕ダウンロード</h3>
+        <p>字幕をSRT・CSV形式でダウンロード。英語と日本語の対訳CSVにも対応。Ankiへのエクスポートも。</p>
+      </div>
+      <div class="feature-card" style="border-color: rgba(107, 197, 240, 0.15);">
+        <span class="feature-emoji">🤖</span>
+        <h3>AI英文解説 <span style="font-size:11px; color:#6bc5f0; font-weight:400;">プロ</span></h3>
+        <p>セリフの意味・文法・語彙をAIが日本語で解説。分からなかった表現もその場で理解できます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How it Works -->
+<section class="how" id="how">
+  <div class="container">
+    <h2><span class="accent">かんたん</span> 3ステップ</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>拡張機能を追加</h3>
+        <p>Chrome ウェブストアから「Purrdon?」をインストール。数秒で完了します。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Netflixで再生</h3>
+        <p>好きな映画やドラマを再生。英語の字幕が自動的にディクテーション形式に切り替わります。</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>クリックで答え合わせ</h3>
+        <p>聞き取れたらクリックして一文字ずつ表示。答え合わせしながらリスニング力を鍛えよう。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Note -->
+<section class="note-section">
+  <div class="container">
+    <div class="note-box">
+      <span class="note-icon">⚠️</span>
+      <p>本拡張機能は<strong>「英語（字幕ガイド）」</strong>（CC/SDH）がある作品に対応しています。字幕ガイドがない作品では、音声と字幕が一致しない場合があります。</p>
+    </div>
+  </div>
+</section>
+
+<!-- Keyboard shortcuts -->
+<section class="shortcuts-section">
+  <div class="container">
+    <h2><span class="accent">キーボード</span>ショートカット</h2>
+    <div class="shortcut-grid">
+      <div class="shortcut-item"><kbd>A</kbd> <span>前のセリフへ</span></div>
+      <div class="shortcut-item"><kbd>S</kbd> <span>もう一度再生</span></div>
+      <div class="shortcut-item"><kbd>D</kbd> <span>次のセリフへ</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Plans -->
+<section class="plans" id="plans">
+  <div class="container">
+    <h2><span class="accent">プラン</span></h2>
+    <p class="plans-sub">フリープランで今すぐ始められます</p>
+    <div class="plan-cards">
+      <div class="plan-card">
+        <div class="plan-emoji">✨</div>
+        <h3>フリー</h3>
+        <div class="plan-price">¥0</div>
+        <ul class="plan-features">
+          <li><span class="check">&#10003;</span> ディクテーション（1日10回）</li>
+          <li><span class="check">&#10003;</span> 自動一時停止</li>
+          <li><span class="check">&#10003;</span> キーボードショートカット</li>
+          <li><span class="check">&#10003;</span> 辞書機能</li>
+          <li><span class="check">&#10003;</span> 単語帳（20件まで）</li>
+          <li><span class="check">&#10003;</span> お気に入りセリフ（5件まで）</li>
+          <li><span class="check">&#10003;</span> 字幕ダウンロード</li>
+          <li><span class="cross">✕</span> AI英文解説</li>
+        </ul>
+      </div>
+      <div class="plan-card">
+        <div class="plan-emoji">😺</div>
+        <h3>ベーシック</h3>
+        <div class="plan-price">¥380<span> / 月</span></div>
+        <ul class="plan-features">
+          <li><span class="check">&#10003;</span> ディクテーション<strong style="color:#4ecca3;">無制限</strong></li>
+          <li><span class="check">&#10003;</span> 単語帳 <strong style="color:#4ecca3;">無制限</strong></li>
+          <li><span class="check">&#10003;</span> お気に入りセリフ <strong style="color:#4ecca3;">無制限</strong></li>
+          <li><span class="check">&#10003;</span> 英語常時表示（日英同時字幕）</li>
+          <li><span class="check">&#10003;</span> 日本語字幕表示</li>
+          <li><span class="check">&#10003;</span> 辞書・字幕DL・その他全機能</li>
+          <li><span class="cross">✕</span> AI英文解説</li>
+        </ul>
+      </div>
+      <div class="plan-card plan-pro">
+        <div class="plan-emoji">🚀</div>
+        <h3>プロ</h3>
+        <div class="plan-price" style="color:#6bc5f0;">¥980<span> / 月</span></div>
+        <ul class="plan-features">
+          <li><span class="check">&#10003;</span> ベーシックの全機能</li>
+          <li><span class="check" style="color:#6bc5f0;">&#10003;</span> <strong style="color:#6bc5f0;">AI英文解説</strong></li>
+          <li><span class="check">&#10003;</span> 開発者を応援</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <div class="cta-box">
+      <h2>今日から始めよう</h2>
+      <p>Netflixを楽しみながら、英語のリスニング力をアップ。<br>無料でインストールして、すぐに練習を始められます。</p>
+      <a href="#" class="btn-chrome" id="cta-install-btn">
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        無料でChromeに追加
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="privacy.html">プライバシーポリシー</a>
+      <span class="footer-sep">|</span>
+      <a href="https://discord.gg/jX9rym5ssj" target="_blank">Discord コミュニティ</a>
+    </div>
+    <div class="footer-inner">
+      <img src="icon128.png" alt="">
+      <span>Purrdon? &copy; 2025</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      const href = a.getAttribute('href');
+      if (href === '#') return;
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>
