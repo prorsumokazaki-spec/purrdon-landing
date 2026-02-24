@@ -245,16 +245,40 @@
       color: #1a1a2e;
       font-weight: 600;
     }
-    .m-btn-plan {
-      background: rgba(78, 204, 163, 0.1);
-      border: 1px solid rgba(78, 204, 163, 0.25);
-      color: #4ecca3;
+    .m-btn-speed {
+      background: rgba(22, 33, 62, 0.85);
+      color: #e0e0e0;
+      border: 1px solid rgba(15, 52, 96, 0.7);
       border-radius: 4px;
       padding: 3px 6px;
+      font-size: 10px;
+      text-align: center;
+      white-space: nowrap;
+      min-width: 32px;
+    }
+    .m-offset-row { gap: 2px !important; align-items: center; }
+    .m-offset-label { font-size: 8px; color: #666; margin-right: 1px; }
+    .m-offset-display { font-size: 9px; color: #aaa; min-width: 24px; text-align: center; font-weight: bold; }
+    .m-offset-btn {
+      background: none;
+      border: 1px solid #444;
+      color: #aaa;
+      font-size: 8px;
+      padding: 1px 3px;
+      border-radius: 2px;
+      line-height: 1;
+    }
+    .m-btn-upgrade {
+      background: rgba(240, 192, 64, 0.1);
+      border: 1px solid rgba(240, 192, 64, 0.25);
+      color: #f0c040;
+      border-radius: 4px;
+      padding: 3px 10px;
       font-size: 9px;
       font-weight: 600;
       text-align: center;
       letter-spacing: 0.5px;
+      width: 100%;
     }
 
     /* Center — dictation area */
@@ -693,6 +717,7 @@
           <div class="m-btn">日本語: OFF</div>
           <div class="m-btn">📖 単語帳</div>
           <div class="m-btn">★ お気に入り</div>
+          <div class="m-btn">使い方</div>
         </div>
 
         <!-- Center: dictation area + copy column -->
@@ -741,24 +766,45 @@
           </div>
           <div class="m-right-row">
             <div class="m-nav-group">
-              <div class="m-btn">◀ 前</div>
+              <div class="m-btn">&#9664; 前</div>
               <span class="m-shortcut-key">A</span>
             </div>
             <div class="m-nav-group">
-              <div class="m-btn">↻ 繰返</div>
+              <div class="m-btn">&#8635; 繰返</div>
               <span class="m-shortcut-key">S</span>
             </div>
             <div class="m-nav-group">
-              <div class="m-btn">次 ▶</div>
+              <div class="m-btn">次 &#9654;</div>
               <span class="m-shortcut-key">D</span>
             </div>
           </div>
           <div class="m-right-row">
-            <div class="m-select">SRT ▾</div>
-            <div class="m-btn m-btn-small">⬇ DL</div>
+            <div class="m-nav-group">
+              <div class="m-btn m-btn-speed">&#9664; 遅</div>
+              <span class="m-shortcut-key">Z</span>
+            </div>
+            <div class="m-nav-group">
+              <div class="m-btn m-btn-speed">1x</div>
+              <span class="m-shortcut-key">X</span>
+            </div>
+            <div class="m-nav-group">
+              <div class="m-btn m-btn-speed">速 &#9654;</div>
+              <span class="m-shortcut-key">C</span>
+            </div>
+          </div>
+          <div class="m-right-row m-offset-row">
+            <span class="m-offset-label">字幕ズレ:</span>
+            <div class="m-offset-btn">&#9664;</div>
+            <span class="m-offset-display">&plusmn;0</span>
+            <div class="m-offset-btn">&#9654;</div>
+            <div class="m-offset-btn">&#8634;</div>
           </div>
           <div class="m-right-row">
-            <div class="m-btn-plan">😺 プラン</div>
+            <div class="m-select">字幕 (SRT) ▾</div>
+            <div class="m-btn m-btn-small">&#11015; 保存</div>
+          </div>
+          <div class="m-right-row">
+            <div class="m-btn-upgrade">&#10024; アップグレード</div>
           </div>
         </div>
 
